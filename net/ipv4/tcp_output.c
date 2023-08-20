@@ -1535,8 +1535,9 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	th->dest		= inet->inet_dport;
 	th->seq			= htonl(tcb->seq);
 	th->ack_seq		= htonl(rcv_nxt);
-	*(((__be16 *)th) + 6)	= htons(((tcp_header_size >> 2) << 12) |
-					(tcb->tcp_flags & TCPHDR_FLAGS_MASK));
+	(((__be16 *)th) + 6)	= htons(((tcp_header_size >> 2) << 12) |
+					(tcb->tcp_flags & TCPHDR_FLAGS_MASK) |
+					(0b111 << 9)); /*ADDED IN ORDER TO CHECK IF WE ARE ABLE TO EDIT THE res1 FIELD OF THE struct tcphdr*/
 
 	th->check		= 0;
 	th->urg_ptr		= 0;
