@@ -181,6 +181,12 @@ struct sock_common {
 		};
 	};
 
+	/*SPIN BIT impl: required to define the role for the algorithm*/
+	enum spin_role spin_role;
+	/*SPIN BIT impl: required to carry the value of the algorithm*/
+	enum spin_value spin_value;
+
+
 	unsigned short		skc_family;
 	volatile unsigned char	skc_state;
 	unsigned char		skc_reuse:4;
@@ -242,6 +248,19 @@ struct sock_common {
 		u32		skc_tw_snd_nxt; /* struct tcp_timewait_sock */
 	};
 	/* public: */
+};
+
+/*SPIN BIT impl: required to define the role for the algorithm*/
+enum spin_role {
+	SPIN_ROLE_CLIENT,		//sets the spin_value to the opposite of the 
+//last received value
+	SPIN_ROLE_SERVER,		//sets the spin_value to the same value as the
+};					//last received one
+
+/*SPIN BIT impl: required to carry the value of the algorithm*/
+enum spin_value {
+	SPIN_BIT_DOWN,
+	SPIN_BIT_UP,
 };
 
 struct bpf_local_storage;
@@ -388,6 +407,9 @@ struct sock {
 #define sk_incoming_cpu		__sk_common.skc_incoming_cpu
 #define sk_flags		__sk_common.skc_flags
 #define sk_rxhash		__sk_common.skc_rxhash
+/*SPIN BIT impl: defining macro to access values defined inside the struct sock_common*/
+#define sk_spin_value		__sk_common.spin_value
+#define sk_spin_role		__sk_common.spin_role
 
 	socket_lock_t		sk_lock;
 	atomic_t		sk_drops;

@@ -6266,6 +6266,9 @@ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb)
 	struct tcp_sock *tp = tcp_sk(sk);
 	unsigned int len = skb->len;
 
+	/*SPIN BIT impl: call custom function to save the spin value*/
+	tcp_set_spin_value(sk,th);
+
 	/* TCP congestion window tracking */
 	trace_tcp_probe(sk, skb);
 
@@ -6449,6 +6452,12 @@ discard:
 	tcp_drop(sk, skb);
 }
 EXPORT_SYMBOL(tcp_rcv_established);
+
+/*SPIN BIT impl: save value of the last received packet*/
+void tcp_set_spin_value(struct sock *sk, struct tcphdr *th) {
+	if (th->spin_value) sk->sk_spin_value = SPIN_BIT_UP;
+	else sk->sk_spin_value = SPIN_BIT_DOWN;
+}
 
 void tcp_init_transfer(struct sock *sk, int bpf_op, struct sk_buff *skb)
 {

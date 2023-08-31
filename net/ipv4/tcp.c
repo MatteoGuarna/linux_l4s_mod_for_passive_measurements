@@ -2573,6 +2573,21 @@ void tcp_set_state(struct sock *sk, int state)
 {
 	int oldstate = sk->sk_state;
 
+	/*SPIN BIT impl: assign role for a conversation*/
+	if (oldstate == TCP_SYN_SENT && state == TCP_ESTABLISHED) {
+		/*this is the server of the connection*/
+		sk->sk_spin_role = SPIN_ROLE_CLIENT;
+		sk->sk_spin_value = SPIN_BIT_DOWN;
+	}  
+	else if (oldstate == TCP_SYN_RECV && state == TCP_ESTABLISHED) {
+		/*this is the server of the connection*/
+		sk->sk_spin_role = SPIN_ROLE_SERVER;
+		sk->sk_spin_value = SPIN_BIT_DOWN;
+	}
+
+//the rest of the function remains unchanged
+
+
 	/* We defined a new enum for TCP states that are exported in BPF
 	 * so as not force the internal TCP states to be frozen. The
 	 * following checks will detect if an internal state value ever

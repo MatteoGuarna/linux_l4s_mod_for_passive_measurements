@@ -1457,6 +1457,8 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	struct tcphdr *th;
 	u64 prior_wstamp;
 	int err;
+	/*SPIN BIT impl: here is defined the value to write inside the reserved bit*/
+	u8 spin_value = 0;
 
 	BUG_ON(!skb || !tcp_skb_pcount(skb));
 	tp = tcp_sk(sk);
@@ -1529,6 +1531,12 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 
 	skb_set_dst_pending_confirm(skb, sk->sk_dst_pending_confirm);
 
+	/*SPIN BIT impl: assign value to the variable*/
+	if (sk->sk_state == TCP_ESTABLISHED) {	/*otherwise role and value are undefined and might lead to undefined behaviours*/
+		if (sk->sk_spin_value == SPIN_BIT_UP) spin_value = 0b1;
+		if (sk->sk_spin_role == SPIN_ROLE_CLIENT) spin_value ^= 0b1; /*invert the value if the role is that of the client*/
+	}
+	
 	/* Build TCP header and checksum it. */
 	th = (struct tcphdr *)skb->data;
 	th->source		= inet->inet_sport;
@@ -1537,7 +1545,7 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	th->ack_seq		= htonl(rcv_nxt);
 	*(((__be16 *)th) + 6)	= htons(((tcp_header_size >> 2) << 12) |
 					(tcb->tcp_flags & TCPHDR_FLAGS_MASK) |
-					(0b111 << 9)); /*ADDED IN ORDER TO CHECK IF WE ARE ABLE TO EDIT THE res1 FIELD OF THE struct tcphdr*/
+					(spin_value << 9)); /*SPIN BIT impl: write value inside the header*/
 
 	th->check		= 0;
 	th->urg_ptr		= 0;

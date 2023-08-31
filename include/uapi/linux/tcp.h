@@ -29,7 +29,9 @@ struct tcphdr {
 	__be32	ack_seq;
 #if defined(__LITTLE_ENDIAN_BITFIELD)
 	__u16	ae:1,
-		res1:3,
+		/*spin bit impl*/
+		spin: 1,
+		res1:2,
 		doff:4,
 		fin:1,
 		syn:1,
@@ -41,7 +43,9 @@ struct tcphdr {
 		cwr:1;
 #elif defined(__BIG_ENDIAN_BITFIELD)
 	__u16	doff:4,
-		res1:3,
+		res1:2,
+		/*spin bit impl*/
+		spin:1,
 		ae:1,
 		cwr:1,
 		ece:1,
