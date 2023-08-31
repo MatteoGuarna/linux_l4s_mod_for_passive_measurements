@@ -182,9 +182,9 @@ struct sock_common {
 	};
 
 	/*SPIN BIT impl: required to define the role for the algorithm*/
-	enum spin_role spin_role;
+	enum spin_role		__skc_spin_role;
 	/*SPIN BIT impl: required to carry the value of the algorithm*/
-	enum spin_value spin_value;
+	enum spin_value 	__skc_spin_value;
 
 
 	unsigned short		skc_family;
@@ -408,8 +408,8 @@ struct sock {
 #define sk_flags		__sk_common.skc_flags
 #define sk_rxhash		__sk_common.skc_rxhash
 /*SPIN BIT impl: defining macro to access values defined inside the struct sock_common*/
-#define sk_spin_value		__sk_common.spin_value
-#define sk_spin_role		__sk_common.spin_role
+#define sk_spin_value		__sk_common.__skc_spin_value
+#define sk_spin_role		__sk_common.__skc_spin_role
 
 	socket_lock_t		sk_lock;
 	atomic_t		sk_drops;
