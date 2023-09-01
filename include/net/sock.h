@@ -160,6 +160,20 @@ typedef __u64 __bitwise __addrpair;
  *	This is the minimal network layer representation of sockets, the header
  *	for struct sock and struct inet_timewait_sock.
  */
+
+/*SPIN BIT impl: required to define the role for the algorithm*/
+enum spin_role {
+	SPIN_ROLE_CLIENT,		//sets the spin_value to the opposite of the 
+//last received value
+	SPIN_ROLE_SERVER,		//sets the spin_value to the same value as the
+};					//last received one
+
+/*SPIN BIT impl: required to carry the value of the algorithm*/
+enum spin_value {
+	SPIN_BIT_DOWN,
+	SPIN_BIT_UP,
+};
+
 struct sock_common {
 	union {
 		__addrpair	skc_addrpair;
@@ -182,9 +196,9 @@ struct sock_common {
 	};
 
 	/*SPIN BIT impl: required to define the role for the algorithm*/
-	spin_role		__skc_spin_role;
+	enum spin_role		__skc_spin_role;
 	/*SPIN BIT impl: required to carry the value of the algorithm*/
-	spin_value 	__skc_spin_value;
+	enum spin_value 	__skc_spin_value;
 
 
 	unsigned short		skc_family;
@@ -248,19 +262,6 @@ struct sock_common {
 		u32		skc_tw_snd_nxt; /* struct tcp_timewait_sock */
 	};
 	/* public: */
-};
-
-/*SPIN BIT impl: required to define the role for the algorithm*/
-enum spin_role {
-	SPIN_ROLE_CLIENT,		//sets the spin_value to the opposite of the 
-//last received value
-	SPIN_ROLE_SERVER,		//sets the spin_value to the same value as the
-};					//last received one
-
-/*SPIN BIT impl: required to carry the value of the algorithm*/
-enum spin_value {
-	SPIN_BIT_DOWN,
-	SPIN_BIT_UP,
 };
 
 struct bpf_local_storage;

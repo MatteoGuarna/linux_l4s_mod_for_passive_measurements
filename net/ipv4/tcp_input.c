@@ -6454,8 +6454,8 @@ discard:
 EXPORT_SYMBOL(tcp_rcv_established);
 
 /*SPIN BIT impl: save value of the last received packet*/
-void tcp_set_spin_value(struct sock *sk, struct tcphdr *th) {
-	if (th->spin_value) sk->sk_spin_value = SPIN_BIT_UP;
+void tcp_set_spin_value(struct sock *sk, const struct tcphdr *th) {
+	if (th->spin) sk->sk_spin_value = SPIN_BIT_UP;
 	else sk->sk_spin_value = SPIN_BIT_DOWN;
 }
 
