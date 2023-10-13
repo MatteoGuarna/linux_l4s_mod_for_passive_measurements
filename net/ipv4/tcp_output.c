@@ -1458,7 +1458,7 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	u64 prior_wstamp;
 	int err;
 	/*SPIN BIT impl: here is defined the value to write inside the reserved bit*/
-	u8 spin_value = 0;
+	u8 spin_value = 0b10; //set to 10 in order to recognize the spin algorithm during the handshake (by an external observer) 
 
 	BUG_ON(!skb || !tcp_skb_pcount(skb));
 	tp = tcp_sk(sk);
@@ -1532,8 +1532,9 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	skb_set_dst_pending_confirm(skb, sk->sk_dst_pending_confirm);
 
 	/*SPIN BIT impl: assign value to the variable*/
-	if (sk->sk_state == TCP_ESTABLISHED) {	/*otherwise role and value are undefined and might lead to undefined behaviours*/
-		if (sk->sk_spin_value == SPIN_BIT_UP) spin_value = 0b1;
+	if (sk->sk_state == TCP_ESTABLISHED && /*!sk->sk_state_change &&*/ !((tcb->tcp_flags) & TCPHDR_SYN)) {	/*otherwise role and value are undefined and might lead to undefined behaviours*/
+		if (sk->sk_spin_value == SPIN_BIT_DOWN) spin_value = 0;
+		else spin_value = 0b1;
 		if (sk->sk_spin_role == SPIN_ROLE_CLIENT) spin_value ^= 0b1; /*invert the value if the role is that of the client*/
 	}
 	
