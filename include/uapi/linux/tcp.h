@@ -30,8 +30,9 @@ struct tcphdr {
 #if defined(__LITTLE_ENDIAN_BITFIELD)
 	__u16	ae:1,
 		/*spin bit impl*/
-		spin: 1,
-		res1:2,
+		time: 1,
+		loss: 1,
+		res1:1,
 		doff:4,
 		fin:1,
 		syn:1,
@@ -43,8 +44,9 @@ struct tcphdr {
 		cwr:1;
 #elif defined(__BIG_ENDIAN_BITFIELD)
 	__u16	doff:4,
-		res1:2,
+		res1:1,
 		/*spin bit impl*/
+		loss:1,
 		spin:1,
 		ae:1,
 		cwr:1,
