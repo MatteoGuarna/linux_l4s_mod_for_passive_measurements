@@ -47,7 +47,7 @@ struct tcphdr {
 		res1:1,
 		/*spin bit impl*/
 		loss:1,
-		spin:1,
+		time:1,
 		ae:1,
 		cwr:1,
 		ece:1,
