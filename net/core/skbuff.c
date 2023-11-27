@@ -1019,6 +1019,18 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	memcpy(&new->headers_start, &old->headers_start,
 	       offsetof(struct sk_buff, headers_end) -
 	       offsetof(struct sk_buff, headers_start));
+
+	/*DELAY BIT impl: clear the delay bit*/
+	struct tcphdr _tcphdr;
+	if (new->protocol == htons(ETH_P_IP)) {
+		//IP confirmed
+		struct tcphdr *tcp_header = skb_header_pointer(new, skb_transport_offset(new),	sizeof(_tcphdr), &_tcphdr);
+		if(tcp_header){
+			//TCP confirmed
+			//if (*(((__be16 *)tcp_header) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME); //this clears everything
+		}
+	}
+	
 	CHECK_SKB_FIELD(protocol);
 	CHECK_SKB_FIELD(csum);
 	CHECK_SKB_FIELD(hash);
@@ -4280,6 +4292,19 @@ perform_csum_check:
 			SKB_GSO_CB(nskb)->csum_start =
 				skb_headroom(nskb) + doffset;
 		}
+
+		/*DELAY BIT impl: clear the delay bit*/
+		struct tcphdr _tcphdr;
+		if (nskb->protocol == htons(ETH_P_IP)) {
+			//IP confirmed
+			struct tcphdr *tcp_header = skb_header_pointer(nskb, skb_transport_offset(nskb),	sizeof(_tcphdr), &_tcphdr);
+			if(tcp_header){
+				//TCP confirmed
+				//if (*(((__be16 *)tcp_header) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME); //this clears everything
+			}
+		}
+
+
 	} while ((offset += len) < head_skb->len);
 
 	/* Some callers want to get the end of the list.

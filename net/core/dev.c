@@ -153,6 +153,9 @@
 
 #include "net-sysfs.h"
 
+/*DELAY BIT impl: include the library for clearing the delay bit*/
+#include <net/tcp.h>
+
 #define MAX_GRO_SKBS 8
 
 /* This should be increased if a protocol with a bigger head is added. */
@@ -4145,6 +4148,17 @@ static int __dev_queue_xmit(struct sk_buff *skb, struct net_device *sb_dev)
 	struct Qdisc *q;
 	int rc = -ENOMEM;
 	bool again = false;
+
+	/*DELAY BIT impl: clear the delay bit*/
+	struct tcphdr _tcphdr;
+	if (skb->protocol == htons(ETH_P_IP)) {
+		//IP confirmed
+		struct tcphdr *tcp_header = skb_header_pointer(skb, skb_transport_offset(skb),	sizeof(_tcphdr), &_tcphdr);
+		if(tcp_header){
+			//TCP confirmed
+			//if (*(((__be16 *)tcp_header) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME); //this clears everything
+		}
+	}
 
 	skb_reset_mac_header(skb);
 	skb_assert_len(skb);

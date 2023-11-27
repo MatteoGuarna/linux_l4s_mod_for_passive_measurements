@@ -30,6 +30,11 @@
 #include <net/pkt_sched.h>
 #include <net/pkt_cls.h>
 
+/*DELAY BIT impl: import libraries to allow TCp parse*/
+#include <net/tcp.h>
+#include <linux/skbuff.h>
+
+
 /* 32b enable to support flows with windows up to ~8.6 * 1e9 packets
  * i.e., twice the maximal snd_cwnd.
  * MAX_PROB must be consistent with the RNG in dualpi2_roll().
@@ -444,6 +449,8 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		cnt = 1;
 		byte_len = 0;
 		orig_len = qdisc_pkt_len(skb);
+		/*DELAY BIT impl: clear the TIME flag when fragmentation occurs*/
+		//int is_first = 1;
 		while (nskb) {
 			next = nskb->next;
 			skb_mark_not_on_list(nskb);
@@ -461,6 +468,18 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 				byte_len += nskb->len;
 			}
 			nskb = next;
+
+			/*DELAY BIT impl: clear the delay bit*/
+			struct tcphdr _tcphdr;
+			if (nskb && nskb->protocol == htons(ETH_P_IP)) {
+				//IP confirmed
+				struct tcphdr *tcp_header = skb_header_pointer(nskb, skb_transport_offset(nskb), sizeof(_tcphdr), &_tcphdr);
+				if(tcp_header){
+					//TCP confirmed
+					*(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME);
+				}
+			}
+			
 		}
 		if (err == NET_XMIT_SUCCESS) {
 			/* The caller will add the original skb stats to its

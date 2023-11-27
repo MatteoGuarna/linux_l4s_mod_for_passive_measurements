@@ -161,17 +161,17 @@ typedef __u64 __bitwise __addrpair;
  *	for struct sock and struct inet_timewait_sock.
  */
 
-/*SPIN BIT impl: required to define the role for the algorithm*/
-enum spin_role {
-	SPIN_ROLE_CLIENT,		//sets the spin_value to the opposite of the 
-//last received value
-	SPIN_ROLE_SERVER,		//sets the spin_value to the same value as the
-};					//last received one
+/*DELAY BIT impl: required to define the role for the algorithm*/
+enum delay_role {
+	DELAY_ROLE_CLIENT, //sets the spin_value to the opposite of the	
+	//last received value
+	DELAY_ROLE_SERVER, //sets the spin_value to the same value as the
+}; 	//last received one
 
-/*SPIN BIT impl: required to carry the value of the algorithm*/
-enum spin_value {
-	SPIN_BIT_DOWN,
-	SPIN_BIT_UP,
+/*DELAY BIT impl: required to carry the value of the algorithm*/
+enum delay_sample {
+	DELAY_BIT_DOWN,
+	DELAY_BIT_UP,
 };
 
 struct sock_common {
@@ -195,10 +195,12 @@ struct sock_common {
 		};
 	};
 
-	/*SPIN BIT impl: required to define the role for the algorithm*/
-	enum spin_role		__skc_spin_role;
-	/*SPIN BIT impl: required to carry the value of the algorithm*/
-	enum spin_value 	__skc_spin_value;
+	/*DELAY BIT impl: required to define the role for the algorithm*/
+	enum delay_role __skc_delay_role;
+	/*DELAY BIT impl: required to forward the delay sample*/
+	enum delay_sample __skc_delay_sample;
+	ktime_t __skc_ds_time;
+	//const int64_t __skc_tmax_ms = 100;
 
 
 	unsigned short		skc_family;
@@ -408,10 +410,11 @@ struct sock {
 #define sk_incoming_cpu		__sk_common.skc_incoming_cpu
 #define sk_flags		__sk_common.skc_flags
 #define sk_rxhash		__sk_common.skc_rxhash
-/*SPIN BIT impl: defining macro to access values defined inside the struct sock_common*/
-#define sk_spin_value		__sk_common.__skc_spin_value
-#define sk_spin_role		__sk_common.__skc_spin_role
-
+/*DELAY BIT impl: defining macro to access values defined inside the struct sock_common*/
+#define sk_delay_role __sk_common.__skc_delay_role
+#define sk_delay_sample __sk_common.__skc_delay_sample
+#define sk_delay_ds_time __sk_common.__skc_ds_time
+//#define sk_delay_tmax_ms __sk_common.__skc_tmax_ms
 	socket_lock_t		sk_lock;
 	atomic_t		sk_drops;
 	int			sk_rcvlowat;

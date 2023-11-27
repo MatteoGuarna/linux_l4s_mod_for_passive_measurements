@@ -6266,8 +6266,8 @@ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb)
 	struct tcp_sock *tp = tcp_sk(sk);
 	unsigned int len = skb->len;
 
-	/*SPIN BIT impl: call custom function to save the spin value*/
-	tcp_set_spin_value(sk,th);
+	/*DELAY BIT impl: define header for tcp_set_spin_value inside net/ipv4/tcp_input.c*/
+	tcp_set_delay_sample(sk,th);
 
 	/* TCP congestion window tracking */
 	trace_tcp_probe(sk, skb);
@@ -6453,10 +6453,9 @@ discard:
 }
 EXPORT_SYMBOL(tcp_rcv_established);
 
-/*SPIN BIT impl: save value of the last received packet*/
-void tcp_set_spin_value(struct sock *sk, const struct tcphdr *th) {
-	if (th->time) sk->sk_spin_value = SPIN_BIT_UP;
-	else sk->sk_spin_value = SPIN_BIT_DOWN;
+/*DELAY BIT impl: save value of the last received packet*/
+void tcp_set_delay_sample(struct sock *sk, const struct tcphdr *th) {
+	if (th->time) sk->sk_delay_sample = DELAY_BIT_UP;
 }
 
 void tcp_init_transfer(struct sock *sk, int bpf_op, struct sk_buff *skb)

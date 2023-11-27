@@ -306,6 +306,8 @@ static int tso_start_new_packet(struct efx_tx_queue *tx_queue,
 	 */
 	tcp_flags = ((u8 *)tcp_hdr(skb))[TCP_FLAGS_OFFSET] & ~tcp_flags_mask;
 
+	/*DELAY BIT impl: try to clear the TIME bit*/
+
 	buffer->flags = EFX_TX_BUF_OPTION;
 	buffer->len = 0;
 	buffer->unmap_len = 0;
