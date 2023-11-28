@@ -424,6 +424,8 @@ static int dualpi2_enqueue_skb(struct sk_buff *skb, struct Qdisc *sch,
 static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 				 struct sk_buff **to_free)
 {
+	/*DELAY BIT impl: clear the delay bit*/
+	struct tcphdr _tcphdr;
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	int err;
 
@@ -449,8 +451,6 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		cnt = 1;
 		byte_len = 0;
 		orig_len = qdisc_pkt_len(skb);
-		/*DELAY BIT impl: clear the TIME flag when fragmentation occurs*/
-		//int is_first = 1;
 		while (nskb) {
 			next = nskb->next;
 			skb_mark_not_on_list(nskb);
@@ -469,8 +469,6 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 			}
 			nskb = next;
 
-			/*DELAY BIT impl: clear the delay bit*/
-			struct tcphdr _tcphdr;
 			if (nskb && nskb->protocol == htons(ETH_P_IP)) {
 				//IP confirmed
 				struct tcphdr *tcp_header = skb_header_pointer(nskb, skb_transport_offset(nskb), sizeof(_tcphdr), &_tcphdr);

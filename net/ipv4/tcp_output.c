@@ -1534,7 +1534,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	skb_set_dst_pending_confirm(skb, sk->sk_dst_pending_confirm);
 
 	/*DELAY BIT impl: assign value to the variable*/
-	//if(tcb->tcp_flags & TCPHDR_TIME) delay_sample = 0b0; 	/*DELAY BIT impl: avoid marking the segment with the delay sample*/
 	if (tcb->tcp_flags & TCPHDR_SYN) {
 		delay_sample = 0b1;
 	}
@@ -1549,14 +1548,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 		delay_sample = 0b1;
 		sk->sk_delay_ds_time = ktime_get_coarse();
 	}
-
-	//if (tcp_skb_pcount(skb) > 1) delay_sample = 0; //this clears all push acks, but also associated acks, which is no good
-	//if (tcb->tcp_flags & TCPHDR_PSH) delay_sample = 0;
-	//if (clone_it) delay_sample = 0;
-	//if(tcb->tcp_flags & TCPHDR_TIME) delay_sample |= 0b10; 	/*DELAY BIT impl: avoid marking the segment with the delay sample*/
-	
-	//get_random_bytes(&delay_sample, sizeof(delay_sample));
-	//delay_sample &= 0b00000001;
 
 	/* Build TCP header and checksum it. */
 	th = (struct tcphdr *)skb->data;
@@ -1595,10 +1586,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 
 	tcp_options_write((__be32 *)(th + 1), tp, &opts);
 
-	/*DELAY BIT impl: try clear push packets*/
-	//if (th->psh) th->res1 &= ~0x02;
-	//if (*(((__be16 *)th) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)th) + 6) &= ~htons(TCPHDR_TIME); //this clears everything
-
 #ifdef CONFIG_TCP_MD5SIG
 	/* Calculate the MD5 hash, as we have all we need now */
 	if (md5) {
@@ -1610,9 +1597,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 
 	/* BPF prog is the last one writing header option */
 	bpf_skops_write_hdr_opt(sk, skb, NULL, NULL, 0, &opts);
-
-	/*DELAY BIT impl: from now on header ins't modified or so it seems*/
-	//if (*(((__be16 *)th) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)th) + 6) &= ~htons(TCPHDR_TIME);
 	
 	INDIRECT_CALL_INET(icsk->icsk_af_ops->send_check,
 			   tcp_v6_send_check, tcp_v4_send_check,
@@ -1644,9 +1628,6 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 			       sizeof(struct inet6_skb_parm)));
 
 	tcp_add_tx_delay(skb, tp);
-
-	/*DELAY BIT impl: this is the latest the function can be called in the TCP stack*/
-	//if (*(((__be16 *)th) + 6) & htons(TCPHDR_PSH)) *(((__be16 *)th) + 6) &= ~htons(TCPHDR_TIME);
 
 	err = INDIRECT_CALL_INET(icsk->icsk_af_ops->queue_xmit,
 				 inet6_csk_xmit, ip_queue_xmit,
@@ -1833,7 +1814,6 @@ int tcp_fragment(struct sock *sk, enum tcp_queue tcp_queue,
 	flags = TCP_SKB_CB(skb)->tcp_flags;
 	TCP_SKB_CB(skb)->tcp_flags = flags & ~(TCPHDR_FIN | TCPHDR_PSH);
 	TCP_SKB_CB(buff)->tcp_flags = flags;
-	TCP_SKB_CB(buff)->tcp_flags &= ~ TCPHDR_TIME; /*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
 	TCP_SKB_CB(buff)->sacked = TCP_SKB_CB(skb)->sacked;
 	tcp_skb_fragment_eor(skb, buff);
 
@@ -2404,7 +2384,6 @@ static int tso_fragment(struct sock *sk, struct sk_buff *skb, unsigned int len,
 	flags = TCP_SKB_CB(skb)->tcp_flags;
 	TCP_SKB_CB(skb)->tcp_flags = flags & ~(TCPHDR_FIN | TCPHDR_PSH);
 	TCP_SKB_CB(buff)->tcp_flags = flags;
-	TCP_SKB_CB(buff)->tcp_flags &= ~ TCPHDR_TIME; /*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/;
 
 	/* This packet was never sent out yet, so no SACK bits. */
 	TCP_SKB_CB(buff)->sacked = 0;
@@ -2681,8 +2660,6 @@ static int tcp_mtu_probe(struct sock *sk)
 			/* We've eaten all the data from this skb.
 			 * Throw it away. */
 			TCP_SKB_CB(nskb)->tcp_flags |= TCP_SKB_CB(skb)->tcp_flags;
-			/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-			//TCP_SKB_CB(nskb)->tcp_flags &= ~ TCPHDR_TIME;
 			/* If this is the last SKB we copy and eor is set
 			 * we need to propagate it to the new skb.
 			 */
@@ -2693,8 +2670,6 @@ static int tcp_mtu_probe(struct sock *sk)
 		} else {
 			TCP_SKB_CB(nskb)->tcp_flags |= TCP_SKB_CB(skb)->tcp_flags &
 						   ~(TCPHDR_FIN|TCPHDR_PSH);
-			/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-			//TCP_SKB_CB(nskb)->tcp_flags &= ~ TCPHDR_TIME;
 			if (!skb_shinfo(skb)->nr_frags) {
 				skb_pull(skb, copy);
 			} else {
@@ -4086,8 +4061,6 @@ static int tcp_send_syn_data(struct sock *sk, struct sk_buff *syn)
 	 */
 	TCP_SKB_CB(syn_data)->seq++;
 	TCP_SKB_CB(syn_data)->tcp_flags = TCPHDR_ACK | TCPHDR_PSH;
-	/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/;
-	//TCP_SKB_CB(syn_data)->tcp_flags &= ~ TCPHDR_TIME;
 
 	if (!err) {
 		tp->syn_data = (fo->copied > 0);
@@ -4340,8 +4313,6 @@ int tcp_write_wakeup(struct sock *sk, int mib)
 		    skb->len > mss) {
 			seg_size = min(seg_size, mss);
 			TCP_SKB_CB(skb)->tcp_flags |= TCPHDR_PSH;
-			/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/;
-			//TCP_SKB_CB(skb)->tcp_flags &= ~ TCPHDR_TIME;
 			if (tcp_fragment(sk, TCP_FRAG_IN_WRITE_QUEUE,
 					 skb, seg_size, mss, GFP_ATOMIC))
 				return -1;
@@ -4349,8 +4320,6 @@ int tcp_write_wakeup(struct sock *sk, int mib)
 			tcp_set_skb_tso_segs(skb, mss);
 
 		TCP_SKB_CB(skb)->tcp_flags |= TCPHDR_PSH;
-		/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/;
-		//TCP_SKB_CB(skb)->tcp_flags &= ~ TCPHDR_TIME;
 		err = tcp_transmit_skb(sk, skb, 1, GFP_ATOMIC);
 		if (!err)
 			tcp_event_new_data_sent(sk, skb);

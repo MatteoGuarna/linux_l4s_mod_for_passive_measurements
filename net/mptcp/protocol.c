@@ -1381,8 +1381,6 @@ alloc_skb:
 	/* on skb reuse we just need to update the DSS len */
 	if (reuse_skb) {
 		TCP_SKB_CB(skb)->tcp_flags &= ~TCPHDR_PSH;
-		/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-		//TCP_SKB_CB(skb)->tcp_flags &= ~TCPHDR_TIME;
 		mpext->data_len += copy;
 		WARN_ON_ONCE(zero_window_probe);
 		goto out;

@@ -648,8 +648,6 @@ EXPORT_SYMBOL(tcp_ioctl);
 void tcp_mark_push(struct tcp_sock *tp, struct sk_buff *skb)
 {
 	TCP_SKB_CB(skb)->tcp_flags |= TCPHDR_PSH;
-	/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-	//TCP_SKB_CB(skb)->tcp_flags |= TCPHDR_LOSS;
 	tp->pushed_seq = tp->write_seq;
 }
 
@@ -1070,9 +1068,6 @@ ssize_t do_tcp_sendpages(struct sock *sk, struct page *page, int offset,
 		if (!copied)
 			TCP_SKB_CB(skb)->tcp_flags &= ~TCPHDR_PSH;
 
-		/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-		//if (!copied) TCP_SKB_CB(skb)->tcp_flags &= ~ TCPHDR_TIME; //does not do anything
-
 		copied += copy;
 		offset += copy;
 		size -= copy;
@@ -1394,9 +1389,6 @@ new_segment:
 
 		if (!copied)
 			TCP_SKB_CB(skb)->tcp_flags &= ~TCPHDR_PSH;
-		
-		/*DELAY BIT impl: remove time marking if more than a packet is being sent at the time*/
-		if (!copied) TCP_SKB_CB(skb)->tcp_flags &= ~ TCPHDR_TIME;
 
 		WRITE_ONCE(tp->write_seq, tp->write_seq + copy);
 		TCP_SKB_CB(skb)->end_seq += copy;
