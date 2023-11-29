@@ -153,6 +153,8 @@
 
 #include "net-sysfs.h"
 
+/*DELAY BIT impl: import libraries to allow TCp parse*/
+#include <net/tcp.h>
 
 #define MAX_GRO_SKBS 8
 
@@ -3378,6 +3380,10 @@ struct sk_buff *__skb_gso_segment(struct sk_buff *skb,
 				  netdev_features_t features, bool tx_path)
 {
 	struct sk_buff *segs;
+	/*DELAY BIT impl: necessary to clear the delay bit*/
+	struct tcphdr _tcphdr;
+	struct sk_buff *nskb;
+	struct sk_buff *next;
 
 	if (unlikely(skb_needs_check(skb, tx_path))) {
 		int err;
@@ -3411,6 +3417,24 @@ struct sk_buff *__skb_gso_segment(struct sk_buff *skb,
 	skb_reset_mac_len(skb);
 
 	segs = skb_mac_gso_segment(skb, features);
+
+	/*DELAY BIT impl: try to fix the fragmentation issue for the delay bit*/
+	nskb = segs;
+	while (nskb) {
+			next = nskb->next;
+			nskb = next; //first row does not get its bit cleared
+			
+			/*DELAY BIT impl: clear the delay bit*/
+			if (nskb && nskb->protocol == htons(ETH_P_IP)) {
+				//IP confirmed
+				struct tcphdr *tcp_header = skb_header_pointer(nskb, skb_transport_offset(nskb), sizeof(_tcphdr), &_tcphdr);
+				if(tcp_header){
+					//TCP confirmed
+					*(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME);
+				}
+			}
+			
+		}
 
 	if (segs != skb && unlikely(skb_needs_check(skb, tx_path) && !IS_ERR(segs)))
 		skb_warn_bad_offload(skb);

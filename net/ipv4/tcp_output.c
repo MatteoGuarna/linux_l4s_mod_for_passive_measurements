@@ -1537,7 +1537,7 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	if (tcb->tcp_flags & TCPHDR_SYN) {
 		delay_sample = 0b1;
 	}
-	else if (opts.num_sack_blocks) {
+	else if (opts.num_sack_blocks) { //avoid SACK marking to avoid duplicate packets
 		delay_sample = 0;
 	}
 	else if (sk->sk_delay_sample == DELAY_BIT_UP) {

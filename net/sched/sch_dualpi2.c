@@ -30,9 +30,6 @@
 #include <net/pkt_sched.h>
 #include <net/pkt_cls.h>
 
-/*DELAY BIT impl: import libraries to allow TCp parse*/
-#include <net/tcp.h>
-#include <linux/skbuff.h>
 
 
 /* 32b enable to support flows with windows up to ~8.6 * 1e9 packets
@@ -424,8 +421,6 @@ static int dualpi2_enqueue_skb(struct sk_buff *skb, struct Qdisc *sch,
 static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 				 struct sk_buff **to_free)
 {
-	/*DELAY BIT impl: clear the delay bit*/
-	struct tcphdr _tcphdr;
 	struct dualpi2_sched_data *q = qdisc_priv(sch);
 	int err;
 
@@ -467,17 +462,7 @@ static int dualpi2_qdisc_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 				++cnt;
 				byte_len += nskb->len;
 			}
-			nskb = next;
-
-			if (nskb && nskb->protocol == htons(ETH_P_IP)) {
-				//IP confirmed
-				struct tcphdr *tcp_header = skb_header_pointer(nskb, skb_transport_offset(nskb), sizeof(_tcphdr), &_tcphdr);
-				if(tcp_header){
-					//TCP confirmed
-					*(((__be16 *)tcp_header) + 6) &= ~htons(TCPHDR_TIME);
-				}
-			}
-			
+			nskb = next;			
 		}
 		if (err == NET_XMIT_SUCCESS) {
 			/* The caller will add the original skb stats to its
